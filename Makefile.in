@@ -1,0 +1,55 @@
+CXX     	:= g++
+cxxstd  	:= -std=c++11
+wflags  	:= -Wall -Wextra -Wconversion -Wshadow -Wsign-compare
+opt			:= -O3 -DNDEBUG
+TARGET_ARCH := -m64 -march=native -mfpmath=sse
+
+ifneq ($(DEBUG),)
+	sanitizer := address
+	LDFLAGS	  := -fuse-ld=gold -fsanitize=$(sanitizer)
+	opt  	  := -O0 -g -fno-omit-frame-pointer -fsanitize=$(sanitizer)
+endif
+
+srcs  = ChaNGa-acc.cpp
+objs := $(patsubst %.cpp, %.o, $(srcs))
+lib   = libchangaacc.so
+
+test_srcs := test.cpp
+test_objs := $(patsubst %.cpp, %.o, $(test_srcs))
+test_exec := acc_test
+
+inc := @STRUCTURES_INC@ @XDR_INC@
+
+.DEFAULT_GOAL := all
+
+.PHONY: all
+all: $(lib)
+
+$(test_exec) : $(objs) $(test_objs)
+	@ echo Building '$(test_exec)'...
+	@ $(CXX) $(LDFLAGS) -o $@ $^
+
+$(lib): $(objs)
+	@ echo Building shared library '$@'...
+	@ $(CXX) -shared -Wl,-soname,$(lib) $(LDFLAGS) -o $@ $^
+
+%.o: %.cpp
+	@ echo Compiling $<...
+	@ $(CXX) $(cxxstd) $(wflags) $(opt) $(TARGET_ARCH) $(inc) $(CXXFLAGS) -fPIC -c $< -o $@
+
+.PHONY: check test
+test check: $(test_exec)
+	@ echo Running C++ tests...
+	@ ./$(test_exec)
+	@ echo
+	@ echo Running Python3 tests...
+	@ python3 test.py
+
+.PHONY: clean
+clean:
+	@ echo Cleaning...
+	@ $(RM) $(objs) $(test_objs) *.pyc $(lib) $(test_exec)
+
+.PHONY: dist-clean
+dist-clean: clean
+	@ $(RM) -r __pycache__ config.log config.status configure Makefile autom4te.cache

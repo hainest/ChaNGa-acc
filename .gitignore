@@ -1,0 +1,14 @@
+# Eclipse files
+.settings/
+.cproject
+.project
+.pydevproject
+
+# autoconf files
+config.log
+config.status
+configure
+
+*.o
+*.so
+Makefile
