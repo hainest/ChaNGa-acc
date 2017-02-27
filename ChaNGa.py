@@ -17,7 +17,7 @@ class File:
         if self.data is None:
             self.lib.ChaNGa_py_read_header(self.cfname, ctypes.byref(self.num_particles),
                                            ctypes.byref(self.is_double))
-            if self.is_double.value:
+            if int(self.is_double.value) == 1:
                 self.data = np.empty((self.num_particles.value, 3), dtype=np.float64)
                 self.lib.ChaNGa_py_read_accelerations_double(self.cfname, self.data, self.num_particles)
             else:
